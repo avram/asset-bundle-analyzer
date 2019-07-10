@@ -365,13 +365,13 @@ class Parser(object):
 
         # Determine indentation level (count number of tabs).
         level = 0
-        while line[level] == '\t':
+        while level < len(line) and line[level] == '\t':
             level += 1
         match = self._field_regex.match(line[level:])
 
         if match:
             return ParsedField(level, match.group(1), match.group(2) if match.group(2) != " " else None, match.group(3))
-        
+
         # Try to parse array data.
         match = re.match(r"data \s?\((\S+\s?\S*)\) #\d+: .*", line[level:])
         if match:
@@ -382,7 +382,7 @@ class Parser(object):
 
 class ObjectProcessor(object):
     def __init__(self, file_index):
-        
+
         # Dict mapping class id to type name.
         self._types = {}
         self._id_generator = IdGenerator()
@@ -407,7 +407,7 @@ class ObjectProcessor(object):
 
         count = 0
         error_count = 0
-        
+
         # Iterate on objects.
         for object_id, obj in objs.iteritems():
             count += 1
@@ -449,7 +449,7 @@ class ObjectProcessor(object):
                 INSERT INTO objects(id, file, object_id, bundle_id, class_id, name, game_object, size, serialized_fields)
                     VALUES(?,?,?,?,?,?,?,?,?)
             ''', (current_id, file_id, object_id, bundle_id, class_id, name, game_object_id, size, serialized_fields))
-            
+
             # Also store the JSON object if requested.
             if store_raw:
                 json_obj = json.dumps(obj, indent=2)
@@ -520,7 +520,7 @@ class ObjectProcessor(object):
         cursor.execute('''
             CREATE VIEW object_view AS
             SELECT objects.id, objects.object_id, asset_bundles.name AS bundle, files.name AS file, objects.class_id, types.name AS type, objects.name, objects.game_object, objects.size,
-            CASE 
+            CASE
                 WHEN size < 1024 THEN printf("%!5.1f B", size * 1.0)
                 WHEN size >=  1024 AND size < (1024 * 1024) THEN printf("%!5.1f KB", size / 1024.0)
                 WHEN size >= (1024 * 1024)  AND size < (1024 * 1024 * 1024) THEN printf("%!5.1f MB", size / 1024.0 / 1024)
@@ -804,7 +804,7 @@ class MeshHandler(BaseHandler):
             compressed_mesh = obj["m_CompressedMesh"].value
             vertices = compressed_mesh["m_Vertices"].value["m_NumItems"].value / 3
             indices = compressed_mesh["m_Triangles"].value["m_NumItems"].value
-            
+
         cursor.execute('''
             INSERT INTO meshes(id, indices, vertices, compression, rw_enabled)
                 VALUES(?,?,?,?,?)
@@ -1170,7 +1170,7 @@ class AssetBundleHandler(BaseHandler):
 
     def process(self, current_id, obj, cursor, bundle_id):
         name = obj["m_Name"].value
-        
+
         #for key, asset in obj["m_Container"].value.iteritems():
         #    if "data" in key:
         #        pptr = asset.value["second"].value["asset"]
@@ -1277,7 +1277,7 @@ class FileIndex(object):
 
         return index
 
-# if running in debug, function to trap stack when breaking 
+# if running in debug, function to trap stack when breaking
 def debug_signal_handler(signal, frame):
     import pdb
     pdb.set_trace()
@@ -1312,9 +1312,9 @@ def debug_print(msg,level=0):
     indent = ""
     if(args.verbose == True):
         indent = "-> "
-        for x in range(level): 
+        for x in range(level):
             indent = "-" + indent
     print("{0}{1}".format(indent, msg))
 
-if __name__ == '__main__':  
+if __name__ == '__main__':
     main()
